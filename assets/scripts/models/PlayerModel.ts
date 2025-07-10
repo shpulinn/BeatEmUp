@@ -1,4 +1,4 @@
-import { _decorator, Component, Vec2, EventTarget } from 'cc';
+import { _decorator, Component, Vec2, EventTarget, Collider2D, PhysicsSystem2D, Rect } from 'cc';
 import { IDamageable } from '../interfaces/IDamageable';
 import { IAttacker } from '../interfaces/IAttacker';
 import { IMovable } from '../interfaces/IMovable';
@@ -16,6 +16,12 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
     private health: number = 100;
     private isAlive: boolean = true;
 
+    @property({ type: Number, tooltip: "Радиус атаки" })
+    attackRange: number = 50;
+
+    @property({ type: Number, tooltip: "Урон" })
+    damage: number = 5;
+
     dispatchEvent(eventName: string, ...args: any[]): void {
         this.eventTarget.emit(eventName, ...args);
     }
@@ -32,6 +38,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
             this.eventTarget.emit('playerDied');
         }
         this.eventTarget.emit('healthChanged', this.health);
+        console.log("Получил урон, текущее здоровье: " + this.health)
     }
 
     getHealth(): number {
@@ -44,10 +51,29 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
     attack(): void {
         if (this.isAttacking || this.attackCooldown > 0) return;
+
+        console.log("Игрок атакует");
+
         this.isAttacking = true;
         this.comboStage = (this.comboStage + 1) % 3;
         this.attackCooldown = 0.5;
         this.eventTarget.emit('attackStarted', this.comboStage);
+
+        const pos = this.node.worldPosition;
+        const half = this.attackRange / 2;
+        const aabb = new Rect(pos.x + half, pos.y + half, this.attackRange, this.attackRange);
+
+        const colliders = PhysicsSystem2D.instance.testAABB(aabb);
+        for (const collider of colliders) {
+            if (collider.node === this.node) continue;
+            const components = collider.node.getComponents(Component);
+            for (const comp of components) {
+                if ('takeDamage' in comp && typeof (comp as IDamageable).takeDamage === 'function') {
+                    (comp as IDamageable).takeDamage(this.damage);
+                    console.log('[PlayerModel] Нанесён урон объекту:', collider.node.name);
+                }
+            }
+        }
     }
 
     move(direction: Vec2, deltaTime: number): void {
