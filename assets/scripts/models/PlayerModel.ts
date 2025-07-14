@@ -1,4 +1,4 @@
-import { _decorator, Component, Vec2, EventTarget, Collider2D, PhysicsSystem2D, Rect } from 'cc';
+import { _decorator, Component, Vec2, EventTarget, PhysicsSystem2D, Rect, RigidBody2D } from 'cc';
 import { IDamageable } from '../interfaces/IDamageable';
 import { IAttacker } from '../interfaces/IAttacker';
 import { IMovable } from '../interfaces/IMovable';
@@ -9,12 +9,13 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
     private eventTarget: EventTarget = new EventTarget();
     private position: Vec2 = new Vec2();
-    private speed = 200;
+    private speed = 5;
     private isAttacking: boolean = false;
     private comboStage: number = 0;
     private attackCooldown: number = 0;
     private health: number = 100;
     private isAlive: boolean = true;
+    private rigidBody: RigidBody2D | null = null;
 
     @property({ type: Number, tooltip: "Радиус атаки" })
     attackRange: number = 50;
@@ -22,12 +23,23 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
     @property({ type: Number, tooltip: "Урон" })
     damage: number = 5;
 
+    protected onLoad(): void {
+        this.rigidBody = this.getComponent(RigidBody2D);
+        if (!this.rigidBody) {
+            console.warn('RigidBody2D not found on PlayerModel, using node position for movement');
+        }
+    }
+
     dispatchEvent(eventName: string, ...args: any[]): void {
         this.eventTarget.emit(eventName, ...args);
     }
 
     on(eventName: string, callback: (...args: any[]) => void): void {
         this.eventTarget.on(eventName, callback, this);
+    }
+
+    off(eventName: string, callback: (...args: any[]) => void): void {
+        this.eventTarget.off(eventName, callback, this);
     }
 
     takeDamage(amount: number): void {
@@ -78,10 +90,24 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
     move(direction: Vec2, deltaTime: number): void {
         if (!direction || direction.length() === 0) {
-            return; // No movement if direction is zero
+            if (this.rigidBody) {
+                this.rigidBody.linearVelocity = new Vec2(0, 0);
+                this.position.set(this.node.position.x, this.node.position.y);
+            }
+            this.eventTarget.emit('positionChanged', this.position.clone());
+            return;
         }
-        this.position.x += direction.x * this.speed * deltaTime;
-        this.position.y += direction.y * this.speed * deltaTime;
+
+        direction = direction.normalize();
+
+        if (this.rigidBody) {
+            this.rigidBody.linearVelocity = new Vec2(direction.x * this.speed, direction.y * this.speed);
+            this.position.set(this.node.position.x, this.node.position.y);
+        } else {
+            this.position.x += direction.x * this.speed * deltaTime;
+            this.position.y += direction.y * this.speed * deltaTime;
+        }
+
         this.eventTarget.emit('positionChanged', this.position.clone());
     }
 
@@ -95,6 +121,9 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
             if (this.attackCooldown <= 0) {
                 this.isAttacking = false;
             }
+        }
+        if (this.rigidBody) {
+            this.position.set(this.node.position.x, this.node.position.y);
         }
     }
 
