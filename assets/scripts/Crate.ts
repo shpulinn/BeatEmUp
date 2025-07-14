@@ -18,7 +18,6 @@ export class Crate extends Component implements IDamageable {
     takeDamage(amount: number): void {
         if (amount > 0) {
             this.currentHealth = Math.max(0, this.currentHealth - amount);
-            console.log("Коробку ударили уроном: " + amount + ", здоровья осталось: " + this.currentHealth);
 
             if (this.currentHealth == 0) {
                 this.node.destroy();

@@ -64,16 +64,23 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
     attack(): void {
         if (this.isAttacking || this.attackCooldown > 0) return;
 
-        console.log("Игрок атакует");
-
         this.isAttacking = true;
-        this.comboStage = (this.comboStage + 1) % 3;
+        //this.comboStage = (this.comboStage + 1) % 3;
         this.attackCooldown = 0.5;
         this.eventTarget.emit('attackStarted', this.comboStage);
 
         const pos = this.node.worldPosition;
-        const half = this.attackRange / 2;
-        const aabb = new Rect(pos.x + half, pos.y + half, this.attackRange, this.attackRange);
+
+        const isFacingLeft = this.node.scale.x < 0;
+
+        const offsetX = isFacingLeft ? -this.attackRange : 0;
+
+        const aabb = new Rect(
+            pos.x + offsetX,
+            pos.y - this.attackRange / 2,
+            this.attackRange,
+            this.attackRange
+        );
 
         const colliders = PhysicsSystem2D.instance.testAABB(aabb);
         for (const collider of colliders) {
