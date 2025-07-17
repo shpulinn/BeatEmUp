@@ -13,6 +13,7 @@ export class PlayerView extends Component {
     private animator: PlayerAnimationController;
 
     private boundPositionChanged: (pos: Vec2) => void;
+    private attack: () => void;
 
     protected onLoad(): void {
         this.playerModel = this.getComponent(PlayerModel);
@@ -34,7 +35,9 @@ export class PlayerView extends Component {
         this.animator = new PlayerAnimationController(this.animation);
 
         this.boundPositionChanged = this.onPositionChanged.bind(this);
+        this.attack = this.onAttack.bind(this);
         this.playerModel.on('positionChanged', this.boundPositionChanged);
+        this.playerModel.on('attackStarted', this.attack);
     }
 
     private onPositionChanged(position: Vec2): void {
@@ -45,7 +48,9 @@ export class PlayerView extends Component {
 
             isMoving = Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1;
 
-            this.animator.setState(isMoving ? PlayerState.Run : PlayerState.Idle);
+            if (!this.animator.isBusy()) {
+                this.animator.setState(isMoving ? PlayerState.Run : PlayerState.Idle);
+            }
 
             if (isMoving) {
                 // Flip X
@@ -58,7 +63,12 @@ export class PlayerView extends Component {
         }
     }
 
+    private onAttack(): void {
+        this.animator.setState(PlayerState.Attack);
+    }
+
     protected onDestroy(): void {
         this.playerModel.off('positionChanged', this.boundPositionChanged);
+        this.playerModel.off('attackStarted', this.onAttack);
     }
 }

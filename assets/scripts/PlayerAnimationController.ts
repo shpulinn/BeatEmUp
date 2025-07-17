@@ -7,23 +7,37 @@ export class PlayerAnimationController extends Component {
     
     private animation: Animation;
     private currentState: PlayerState = PlayerState.Idle;
+    private isLocked: boolean = false;
 
     constructor(animation: Animation) {
         super();
         this.animation = animation;
     }
 
-    public setState(state: PlayerState): void {
-        if (this.currentState === state) return;
+    public setState(newState: PlayerState): void {
+        if (this.isLocked && newState !== PlayerState.Idle) return;
 
-        const clipState = this.animation.getState(state);
-        if (!clipState) {
-            console.warn(`[Animator] Clip "${state}" not found.`);
-            return;
+        if (this.currentState === newState) return;
+
+        this.currentState = newState;
+
+        this.animation.play(newState.toString());
+
+        if (newState === PlayerState.Attack) {
+            this.isLocked = true;
+
+            const clip = this.animation.getState(newState.toString());
+            if (clip) {
+                clip.once('finished', () => {
+                    this.isLocked = false;
+                    this.setState(PlayerState.Idle);
+                });
+            }
         }
+    }
 
-        this.animation.play(state);
-        this.currentState = state;
+    public isBusy(): boolean {
+        return this.isLocked;
     }
 
     public getState(): PlayerState {

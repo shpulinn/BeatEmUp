@@ -12,7 +12,6 @@ export class Crate extends Component implements IDamageable {
 
     protected start(): void {
         this.currentHealth = this.maxHealth;
-        console.log("Здороывье коробки: " + this.currentHealth);
     }
 
     takeDamage(amount: number): void {
@@ -25,5 +24,3 @@ export class Crate extends Component implements IDamageable {
         }
     }
 }
-
-

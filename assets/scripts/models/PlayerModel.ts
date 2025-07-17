@@ -48,6 +48,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
         if (this.health <= 0) {
             this.isAlive = false;
             this.eventTarget.emit('playerDied');
+            console.log("Игрок умер");
         }
         this.eventTarget.emit('healthChanged', this.health);
         console.log("Получил урон, текущее здоровье: " + this.health)
