@@ -1,3 +1,3 @@
 export interface ICollectable {
-    collect(): void;
+    collect(collector: Node): void;
 }

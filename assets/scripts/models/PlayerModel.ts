@@ -1,11 +1,13 @@
-import { _decorator, Component, Vec2, EventTarget, PhysicsSystem2D, Rect, RigidBody2D } from 'cc';
+import { _decorator, Component, Vec2, EventTarget, PhysicsSystem2D, Rect, RigidBody2D, Collider2D, Contact2DType, IPhysics2DContact } from 'cc';
 import { IDamageable } from '../interfaces/IDamageable';
 import { IAttacker } from '../interfaces/IAttacker';
 import { IMovable } from '../interfaces/IMovable';
+import { IHealable } from '../interfaces/IHealable';
+import { ICollectable } from '../interfaces/ICollectable';
 const { ccclass, property } = _decorator;
 
 @ccclass('PlayerModel')
-export class PlayerModel extends Component implements IMovable, IAttacker, IDamageable {
+export class PlayerModel extends Component implements IMovable, IAttacker, IDamageable, IHealable {    
 
     private eventTarget: EventTarget = new EventTarget();
     private position: Vec2 = new Vec2();
@@ -13,20 +15,42 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
     private isAttacking: boolean = false;
     private comboStage: number = 0;
     private attackCooldown: number = 0;
-    private health: number = 100;
+    private health: number = 0;
     private isAlive: boolean = true;
     private rigidBody: RigidBody2D | null = null;
 
     @property({ type: Number, tooltip: "Радиус атаки" })
-    attackRange: number = 50;
+    attackRange: number = 50;   
 
     @property({ type: Number, tooltip: "Урон" })
     damage: number = 5;
+
+    @property({ type: Number, tooltip: "Макс. здоровье" })
+    private maxHealth: number = 100;
 
     protected onLoad(): void {
         this.rigidBody = this.getComponent(RigidBody2D);
         if (!this.rigidBody) {
             console.warn('RigidBody2D not found on PlayerModel, using node position for movement');
+        }        
+    }
+
+    start () {
+        let collider = this.getComponent(Collider2D);
+        if (collider) {
+            collider.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+        }
+
+        this.health = this.maxHealth;
+    }
+
+    onBeginContact (selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
+        let otherNode = otherCollider.node;
+        const components = otherNode.getComponents(Component);
+        for (const comp of components) {
+            if ('collect' in comp && typeof (comp as ICollectable).collect === 'function') {
+                comp.collect(this.node);
+            }
         }
     }
 
@@ -52,11 +76,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
         }
         this.eventTarget.emit('healthChanged', this.health);
         console.log("Получил урон, текущее здоровье: " + this.health)
-    }
-
-    getHealth(): number {
-        return this.health;
-    }
+    }    
 
     isPlayerAlive(): boolean {
         return this.isAlive;
@@ -135,6 +155,23 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
         }
     }
 
+    heal(amount: number): void {
+        if (!this.isAlive) return;
+
+        this.health = Math.min(this.maxHealth, this.health + amount);
+        this.eventTarget.emit('healthChanged', this.health);
+    }
+
+    getMaxHealth(): number {
+        return this.maxHealth;
+    }
+
+    getHealth(): number {
+        return this.health;
+    }
+
+
+
     serialize(): object {
         return {
             position: { x: this.position.x, y: this.position.y },
@@ -147,5 +184,12 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
         this.position.set(data.position.x, data.position.y);
         this.health = data.health;
         this.isAlive = data.isAlive;
+    }
+
+    protected onDisable(): void {
+        let collider = this.getComponent(Collider2D);
+        if (collider) {
+            collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+        }
     }
 } 

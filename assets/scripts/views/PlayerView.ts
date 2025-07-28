@@ -1,4 +1,4 @@
-import { _decorator, Component, Animation, RigidBody2D, Vec2 } from 'cc';
+import { _decorator, Component, Animation, RigidBody2D, Vec2, ProgressBar } from 'cc';
 import { PlayerModel } from '../models/PlayerModel';
 import { PlayerState } from '../PlayerState';
 import { PlayerAnimationController } from '../PlayerAnimationController';
@@ -7,6 +7,9 @@ const { ccclass, property } = _decorator;
 @ccclass('PlayerView')
 export class PlayerView extends Component {
 
+    @property({ type: ProgressBar, tooltip: "HP bar" })
+    healthBar: ProgressBar;  
+
     private playerModel: PlayerModel;
     private rigidBody: RigidBody2D | null = null;
     private animation: Animation;
@@ -14,6 +17,7 @@ export class PlayerView extends Component {
 
     private boundPositionChanged: (pos: Vec2) => void;
     private attack: () => void;
+    private healthChanged: (newHealth: Number) => void;
 
     protected onLoad(): void {
         this.playerModel = this.getComponent(PlayerModel);
@@ -32,12 +36,22 @@ export class PlayerView extends Component {
             console.log('RigidBody2D found, using physics for position updates');
         }
 
+        this.healthBar = this.getComponentInChildren(ProgressBar);
+        if (!this.healthBar) {
+            console.error('healthBar component not found in PlayerView children');
+            return;
+        }
+
         this.animator = new PlayerAnimationController(this.animation);
 
         this.boundPositionChanged = this.onPositionChanged.bind(this);
         this.attack = this.onAttack.bind(this);
+        this.healthChanged = this.onHealthChanged.bind(this);
         this.playerModel.on('positionChanged', this.boundPositionChanged);
         this.playerModel.on('attackStarted', this.attack);
+        this.playerModel.on('healthChanged', this.healthChanged);
+
+        this.onHealthChanged(this.playerModel.getMaxHealth());
     }
 
     private onPositionChanged(position: Vec2): void {
@@ -67,8 +81,18 @@ export class PlayerView extends Component {
         this.animator.setState(PlayerState.Attack);
     }
 
+    private onHealthChanged(newHealth: number) {
+        const maxHealth = this.playerModel?.getMaxHealth?.() ?? 100;
+        if (this.healthBar) {
+            this.healthBar.progress = newHealth / maxHealth;
+        } else {
+            console.warn('[PlayerView] healthBar is not assigned!');
+        }
+    }
+
     protected onDestroy(): void {
         this.playerModel.off('positionChanged', this.boundPositionChanged);
         this.playerModel.off('attackStarted', this.onAttack);
+        this.playerModel.off('healthChanged', this.onHealthChanged);
     }
 }
