@@ -34,7 +34,26 @@ export class EnemyView extends Component {
     }
 
     private onPositionChanged(position: Vec2): void {
-        // Здесь логика проигрывания анимаций движения
+        let isMoving = false;
+        
+        if (this.rigidBody) {
+            const velocity = this.rigidBody.linearVelocity;
+
+            isMoving = Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1;
+
+            if (!this.animator.isBusy()) {
+                this.animator.setState(isMoving ? PlayerState.Run : PlayerState.Idle);
+            }
+
+            if (isMoving) {
+                // Flip X
+                const direction = velocity.x;
+                if (direction !== 0) {
+                    const scale = this.node.scale;
+                    this.node.setScale(Math.sign(direction) < 0 ? -Math.abs(scale.x) : Math.abs(scale.x), scale.y, scale.z);
+                }
+            }
+        }
     }
 
     private onAttack(): void {
