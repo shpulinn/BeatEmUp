@@ -77,7 +77,7 @@ export class EnemyController extends Component {
     // dynamic behaviour change?
     changeEnemyType(newType: EnemyType): void {
         this.enemyType = newType;
-        this.   ();
+        this.setupEnemyBehavior();
     }
 
     getCurrentEnemyType(): EnemyType {
