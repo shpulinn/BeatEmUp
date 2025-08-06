@@ -1,4 +1,4 @@
-import { _decorator, Component, Vec2, find, Node } from 'cc';
+import { _decorator, Component, Vec2, find, Node, Enum } from 'cc';
 import { EnemyModel } from '../models/EnemyModel';
 import { EnemyBehavior } from '../EnemyBehaviour';
 import { MeleeBehavior } from '../MeleeBehaviour';
@@ -16,7 +16,10 @@ export class EnemyController extends Component {
     direction: Vec2 = new Vec2();
     enemyModel!: EnemyModel;
 
-    @property({ tooltip: "Тип поведения врага" })
+    @property({ 
+        tooltip: "Тип поведения врага",
+        type: Enum(EnemyType)
+     })
     enemyType: EnemyType = EnemyType.MELEE;
 
     onLoad() {
