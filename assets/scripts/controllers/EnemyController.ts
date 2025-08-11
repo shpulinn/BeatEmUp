@@ -2,6 +2,7 @@ import { _decorator, Component, Vec2, find, Node, Enum } from 'cc';
 import { EnemyModel } from '../models/EnemyModel';
 import { EnemyBehavior } from '../EnemyBehaviour';
 import { MeleeBehavior } from '../MeleeBehaviour';
+import { Configuration } from '../Configuration';
 const { ccclass, property } = _decorator;
 
 export enum EnemyType {
@@ -67,11 +68,11 @@ export class EnemyController extends Component {
     }
 
     private setupMeleeStats(): void {
-        this.enemyModel.attackRange = 100;
-        this.enemyModel.damage = 15;
-        this.enemyModel.detectionRange = 200;
-        this.enemyModel.setSpeed(4);
-        this.enemyModel.setMaxHealth(60);
+        this.enemyModel.attackRange = Configuration.MeleeEnemyAttackRange;
+        this.enemyModel.damage = Configuration.MeleeEnemyDamage;
+        this.enemyModel.detectionRange = Configuration.MeleeEnemyDetectionRange;
+        this.enemyModel.setSpeed(Configuration.MeleeEnemySpeed);
+        this.enemyModel.setMaxHealth(Configuration.MeleeEnemyHealth);
     }
 
     update(deltaTime: number) {
@@ -86,4 +87,4 @@ export class EnemyController extends Component {
     getCurrentEnemyType(): EnemyType {
         return this.enemyType;
     }
-} 
+}

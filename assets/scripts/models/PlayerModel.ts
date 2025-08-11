@@ -4,6 +4,7 @@ import { IAttacker } from '../interfaces/IAttacker';
 import { IMovable } from '../interfaces/IMovable';
 import { IHealable } from '../interfaces/IHealable';
 import { ICollectable } from '../interfaces/ICollectable';
+import { Configuration } from '../Configuration';
 const { ccclass, property } = _decorator;
 
 @ccclass('PlayerModel')
@@ -11,7 +12,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
     private eventTarget: EventTarget = new EventTarget();
     private position: Vec2 = new Vec2();
-    private speed = 5;
+    private speed = Configuration.PlayerSpeed;
     private isAttacking: boolean = false;
     private comboStage: number = 0;
     private attackCooldown: number = 0;
@@ -20,13 +21,13 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
     private rigidBody: RigidBody2D | null = null;
 
     @property({ type: Number, tooltip: "Радиус атаки" })
-    attackRange: number = 50;   
+    attackRange: number = Configuration.PlayerAttackRange;   
 
     @property({ type: Number, tooltip: "Урон" })
-    damage: number = 5;
+    damage: number = Configuration.PlayerDamage;
 
     @property({ type: Number, tooltip: "Макс. здоровье" })
-    private maxHealth: number = 100;
+    private maxHealth: number = Configuration.PlayerMaxHealth;
 
     protected onLoad(): void {
         this.rigidBody = this.getComponent(RigidBody2D);
@@ -49,7 +50,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
         const components = otherNode.getComponents(Component);
         for (const comp of components) {
             if ('collect' in comp && typeof (comp as ICollectable).collect === 'function') {
-                comp.collect(this.node);
+                (comp as ICollectable).collect(this.node);
             }
         }
     }
@@ -87,7 +88,7 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
         this.isAttacking = true;
         //this.comboStage = (this.comboStage + 1) % 3;
-        this.attackCooldown = 0.5;
+        this.attackCooldown = Configuration.PlayerAttackCooldown;
         this.eventTarget.emit('attackStarted', this.comboStage);
 
         const pos = this.node.worldPosition;
@@ -157,9 +158,9 @@ export class PlayerModel extends Component implements IMovable, IAttacker, IDama
 
     heal(amount: number): void {
         if (!this.isAlive) return;
-
         this.health = Math.min(this.maxHealth, this.health + amount);
         this.eventTarget.emit('healthChanged', this.health);
+        console.log(`[PlayerModel] Исцелен на ${amount}, здоровье: ${this.health}`);
     }
 
     getMaxHealth(): number {

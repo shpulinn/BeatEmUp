@@ -4,31 +4,32 @@ import { IAttacker } from '../interfaces/IAttacker';
 import { IMovable } from '../interfaces/IMovable';
 import { PlayerModel } from '../models/PlayerModel';
 import { EnemyBehavior } from '../EnemyBehaviour';
+import { Configuration } from '../Configuration';
 const { ccclass, property } = _decorator;
 
 @ccclass('EnemyModel')
 export class EnemyModel extends Component implements IMovable, IAttacker, IDamageable {
     private eventTarget: EventTarget = new EventTarget();
     private position: Vec2 = new Vec2();
-    private speed = 3;
+    private speed = Configuration.EnemyBaseSpeed;
     private isAttacking: boolean = false;
     private attackCooldown: number = 0;
-    private health: number = 50;
+    private health: number = Configuration.EnemyBaseHealth;
     private isAlive: boolean = true;
     private rigidBody: RigidBody2D | null = null;
 
     @property({ type: Number, tooltip: "Радиус атаки" })
-    attackRange: number = 40;
+    attackRange: number = Configuration.EnemyBaseAttackRange;
 
     @property({ type: Number, tooltip: "Урон" })
-    damage: number = 10;
+    damage: number = Configuration.EnemyBaseDamage;
 
     private player: Node | null = null;
     @property({ tooltip: 'Радиус обнаружения игрока' })
-    detectionRange: number = 150;
+    detectionRange: number = Configuration.EnemyBaseDetectionRange;
 
     @property
-    maxHealth: number = 100;
+    maxHealth: number = Configuration.EnemyBaseHealth;
 
     private behavior: EnemyBehavior | null = null;
 
@@ -103,7 +104,7 @@ export class EnemyModel extends Component implements IMovable, IAttacker, IDamag
         if (this.isAttacking || this.attackCooldown > 0) return;
 
         this.isAttacking = true;
-        this.attackCooldown = 1.0;
+        this.attackCooldown = Configuration.EnemyAttackCooldown;
         this.eventTarget.emit('attackStarted');
 
         if (!this.player) return;
@@ -176,19 +177,7 @@ export class EnemyModel extends Component implements IMovable, IAttacker, IDamag
 
         if (!this.isAlive || !this.player) return;
 
-        const enemyPos = this.node.getPosition();
-        const playerPos = this.player.getPosition();
-        const distanceToPlayer = Vec2.distance(new Vec2(enemyPos.x, enemyPos.y), new Vec2(playerPos.x, playerPos.y));
-
-        // if (distanceToPlayer <= this.attackRange) {
-        //     this.move(new Vec2(0, 0), deltaTime);
-        //     this.attack();
-        // } else if (distanceToPlayer <= this.detectionRange) {
-        //     const direction = new Vec2(playerPos.x - enemyPos.x, playerPos.y - enemyPos.y);
-        //     this.move(direction, deltaTime);
-        // } else {
-        //     this.move(new Vec2(0, 0), deltaTime);
-        // }
+        // Используем поведение для обновления логики
         if (this.behavior) {
             this.behavior.update(deltaTime);
         } else {
